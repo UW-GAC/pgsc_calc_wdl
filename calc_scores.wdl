@@ -83,6 +83,7 @@ workflow calc_scores {
         File scores = plink_score.scores
         File? adjusted_scores = adjust_prs.adjusted_scores
         File variants = plink_score.variants
+        File allele_freq = plink_score.allele_freq
         File overlap = compute_overlap.overlap
     }
 }
@@ -193,11 +194,14 @@ task plink_score {
         plink2 --pgen ~{pgen} --pvar ~{pvar} --psam ~{psam} --score ~{scorefile} \
             no-mean-imputation header-read list-variants cols=+scoresums --score-col-nums 3-~{scorefile_ncols} \
             --out ~{prefix}
+        plink2 --freq --pgen ~{pgen} --pvar ~{pvar} --psam ~{psam} \
+            --out ~{prefix}
     >>>
 
     output {
         File scores = "~{prefix}.sscore"
         File variants = "~{prefix}.sscore.vars"
+        File allele_freq = "~{prefix}.afreq"
     }
 
     runtime {
