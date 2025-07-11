@@ -36,3 +36,25 @@ weighted_sum_overlap <- function(score_vars, overlap_vars=NULL) {
     weighted_sum(score_vars)
 }
 
+
+score_stats <- function(score_vars, overlap_vars) {
+    names(score_vars)[1] <- 'ID'
+    pgs <- names(score_vars)[str_detect(names(score_vars), '^PGS')]
+    overlap <- list()
+    wtsum <- list()
+    for (p in pgs) {
+        vars <- select(score_vars, ID, weight=!!p)
+        vars <- filter(vars, weight != 0)
+        vars_overlap <- filter(vars, ID %in% overlap_vars)
+        ov <- nrow(vars_overlap) / nrow(vars)
+        wt <- sum((vars_overlap$weight)^2) / sum((vars$weight)^2)
+        overlap[[p]] <- tibble(
+            score = p, 
+            n_variants_score = nrow(vars), 
+            n_variants_overlap = nrow(vars_overlap), 
+            overlap = ov,
+            weight_ratio = wt
+        )
+    }
+    bind_rows(overlap)
+}
