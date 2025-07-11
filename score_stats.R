@@ -41,7 +41,6 @@ score_stats <- function(score_vars, overlap_vars) {
     names(score_vars)[1] <- 'ID'
     pgs <- names(score_vars)[str_detect(names(score_vars), '^PGS')]
     overlap <- list()
-    wtsum <- list()
     for (p in pgs) {
         vars <- select(score_vars, ID, weight=!!p)
         vars <- filter(vars, weight != 0)
