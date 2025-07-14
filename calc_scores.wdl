@@ -219,22 +219,30 @@ task compute_overlap {
     Int disk_size = ceil(3*(size(scorefile, "GB") + size(variants, "GB"))) + 10
 
     command <<<
-        Rscript -e " \
-        library(tidyverse); \
-        score_vars <- read_tsv('~{scorefile}'); \
-        overlap_vars <- readLines('~{variants}'); \
-        names(score_vars)[1] <- 'ID'; \
-        pgs <- names(score_vars)[str_detect(names(score_vars), '^PGS')]; \
-        overlap <- list(); \
-        for (p in pgs) { \
-            vars <- select(score_vars, ID, weight=!!p); \
-            vars <- filter(vars, weight != 0); \
-            ov <- sum(is.element(vars[['ID']], overlap_vars))/nrow(vars); \
-            overlap[[p]] <- tibble(score=p, n_variants=nrow(vars), overlap=ov); \
-        }; \
-        overlap <- bind_rows(overlap); \
-        write_tsv(overlap, 'score_overlap.tsv'); \
-        "
+        R << RSCRIPT
+            library(tidyverse)
+            score_vars <- read_tsv('~{scorefile}')
+            overlap_vars <- readLines('~{variants}')
+            names(score_vars)[1] <- 'ID'
+            pgs <- names(score_vars)[str_detect(names(score_vars), '^PGS')]
+            overlap <- list()
+            for (p in pgs) {
+                vars <- select(score_vars, ID, weight=!!p)
+                vars <- filter(vars, weight != 0)
+                vars_overlap <- filter(vars, ID %in% overlap_vars)
+                ov <- nrow(vars_overlap) / nrow(vars)
+                wt <- sum((vars_overlap[['weight']])^2) / sum((vars[['weight']])^2)
+                overlap[[p]] <- tibble(
+                    score = p, 
+                    n_variants_score = nrow(vars), 
+                    n_variants_overlap = nrow(vars_overlap), 
+                    overlap = ov,
+                    weight_ratio = wt
+                )
+            }
+            overlap <- bind_rows(overlap)
+            write_tsv(overlap, 'score_overlap.tsv')
+        RSCRIPT
     >>>
 
     output {
