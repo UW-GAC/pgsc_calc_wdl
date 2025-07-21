@@ -36,7 +36,7 @@ task adjust_prs {
     command <<<
         Rscript -e "
         library(readr); \
-        source('https://raw.githubusercontent.com/UW-GAC/pgsc_calc_wdl/refs/heads/ancestry_adjust/ancestry_adjustment.R'); \
+        source('https://raw.githubusercontent.com/UW-GAC/pgsc_calc_wdl/refs/heads/main/ancestry_adjustment.R'); \
         scores <- read_tsv('~{scores}'); \
         pcs <- read_tsv('~{pcs}'); \
         mean_coef <- read_tsv('~{mean_coef}'); \
