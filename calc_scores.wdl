@@ -14,8 +14,6 @@ workflow calc_scores {
         Boolean add_chr_prefix = false
         Boolean ancestry_adjust = true
         File? pcs
-        #File? mean_coef
-        #File? var_coef
         File? subset_variants
     }
 

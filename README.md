@@ -27,7 +27,7 @@ Output files from pgsc_calc are described [here](https://pgsc-calc.readthedocs.i
 
 ## pgsc_calc_prepare_genomes
 
-Standalone workflow to convert VCF to pgen/pvar/psam.
+Standalone workflow to convert VCF to pgen/pvar/psam. The pvar generated from the workflow will have variant ids in the form chr:pos:ref:alt without the "chr" prefix.
 
 input | description
 --- | ---
@@ -46,6 +46,12 @@ psam | Array of psam files
 
 Calculate scores without using Nextflow. Use pgsc_calc_prepare_genomes first to generate files.
 
+The first two columns of the score file are expected to be "ID" (variant id) and "effect_allele". All subsequent columns are score weights, with the header of each column containing the score name.
+
+If ancestry_adjust is true, a file with PCs must be supplied. The PC file is expected to have column "IID" for the sample ID and columns starting with "PC" for the PCs. For each score in the scorefile, the code fits a model regressing the score on the PCs. The coefficients from this model are used to adjust the score. Both unadjusted and adjusted scores are returned by the workflow.
+
+If your pvar file contains variant ids starting with a "chr" prefix but your score file does not, set add_chr_prefix to "true" to add the "chr" prefix to the score file to match the pvar. pgsc_calc_prepare_genomes generates a pvar file without the "chr" prefix, so if you prepared your genomes with that workflow, "add_chr_prefix" should be set to "false" (default).
+
 input | description
 --- | ---
 scorefile | score file
@@ -53,10 +59,14 @@ pgen | pgen file
 pvar | pvar file
 psam | psam file
 harmonize_scorefile | Boolean for whether to harmonize scorefile to consistent effect allele (default true)
-add_chr_prefix | Boolean for whether to add "chr" prefix to scorefile variant ids to match pvar (default true)
+add_chr_prefix | Boolean for whether to add "chr" prefix to scorefile variant ids to match pvar (default false)
+ancestry_adjust | Boolean for whether to adjust scores for ancestry using PCs
+pcs | optional file with PCs to adjust for ancestry
+subset_variants | optional list of variants to subset from the scorefile before running
 
 output description
 --- | ---
 scores | sscore file output by plink
+adjusted_scores | if ancestry_adjust is true, a file with adjusted scores is returned
 variants | variants included in sscore
-overlap | TSV file with fraction of overlapping variants for each score
+overlap | TSV file with fraction of overlapping variants and ratio of squared weights for each score
