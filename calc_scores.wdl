@@ -6,7 +6,7 @@ import "subset_score_file.wdl" as subset
 
 workflow calc_scores {
     input {
-        File scorefile
+        Array[File] scorefiles
         File pgen
         File pvar
         File psam
@@ -15,73 +15,93 @@ workflow calc_scores {
         Boolean ancestry_adjust = true
         File? pcs
         File? subset_variants
+        String cohort = "cohort"
     }
 
-    if (harmonize_scorefile) {
-        call harmonize_score_file {
-            input:
-                scorefile = scorefile
+    scatter (scorefile in scorefiles) {
+        if (harmonize_scorefile) {
+            call harmonize_score_file {
+                input:
+                    scorefile = scorefile
+            }
         }
-    }
 
-    if (add_chr_prefix) {
-        call chr_prefix {
-            input:
-                file = select_first([harmonize_score_file.scorefile_harmonized, scorefile])
+        if (add_chr_prefix) {
+            call chr_prefix {
+                input:
+                    file = select_first([harmonize_score_file.scorefile_harmonized, scorefile])
+            }
         }
-    }
 
-    if (defined(subset_variants)) {
-        call subset.subset_scorefile {
+        if (defined(subset_variants)) {
+            call subset.subset_scorefile {
+                input:
+                    scorefile = select_first([chr_prefix.outfile, harmonize_score_file.scorefile_harmonized, scorefile]),
+                    variants = select_first([subset_variants, ""])
+            }
+        }
+
+        File scorefile_final = select_first([subset_scorefile.scorefile_subset, chr_prefix.outfile, harmonize_score_file.scorefile_harmonized, scorefile])
+
+        call n_cols {
+            input:
+                file = scorefile_final
+        }
+
+        call plink_score {
+            input:
+                scorefile = scorefile_final,
+                scorefile_ncols = n_cols.ncols,
+                pgen = pgen,
+                pvar = pvar,
+                psam = psam
+        }
+
+        call compute_overlap {
             input:
                 scorefile = select_first([chr_prefix.outfile, harmonize_score_file.scorefile_harmonized, scorefile]),
-                variants = select_first([subset_variants, ""])
+                variants = plink_score.variants
+        }
+
+        if (ancestry_adjust) {
+            call fit_ancestry.find_ancestry_coefficients {
+                input:
+                    scores = plink_score.scores,
+                    pcs = select_first([pcs, ""])
+            }
+
+            call adjust_scores.adjust_prs {
+                input:
+                    scores = plink_score.scores,
+                    pcs = select_first([pcs, ""]),
+                    mean_coef = find_ancestry_coefficients.mean_coef,
+                    var_coef = find_ancestry_coefficients.var_coef
+            }
         }
     }
 
-    File scorefile_final = select_first([subset_scorefile.scorefile_subset, chr_prefix.outfile, harmonize_score_file.scorefile_harmonized, scorefile])
+    Array[File] scores = plink_score.scores
+    Array[File?] maybe_adjusted_scores = adjust_prs.adjusted_scores
+    Array[File] overlaps = compute_overlap.overlap
 
-    call n_cols {
-        input:
-            file = scorefile_final
-    }
+    # Remove null entries before aggregating
+    Array[File] adjusted_scores = select_all(maybe_adjusted_scores)
 
-    call plink_score {
-        input:
-            scorefile = scorefile_final,
-            scorefile_ncols = n_cols.ncols,
-            pgen = pgen,
-            pvar = pvar,
-            psam = psam
-    }
-
-    call compute_overlap {
-        input:
-            scorefile = select_first([chr_prefix.outfile, harmonize_score_file.scorefile_harmonized, scorefile]),
-            variants = plink_score.variants
-    }
-
-    if (ancestry_adjust) {
-        call fit_ancestry.find_ancestry_coefficients {
+    if (defined(adjusted_scores)) {
+        call aggregate_results {
             input:
-                scores = plink_score.scores,
-                pcs = select_first([pcs, ""])
-        }
-
-        call adjust_scores.adjust_prs {
-            input:
-                scores = plink_score.scores,
-                pcs = select_first([pcs, ""]),
-                mean_coef = find_ancestry_coefficients.mean_coef,
-                var_coef = find_ancestry_coefficients.var_coef
-        }
+                raw_scores = scores,
+	            adjusted_scores = adjusted_scores,
+	            overlap_files = overlaps,
+                prefix = cohort
+         }
     }
 
     output {
-        File scores = plink_score.scores
-        File? adjusted_scores = adjust_prs.adjusted_scores
-        File variants = plink_score.variants
-        File overlap = compute_overlap.overlap
+        File? aggregate_scores_avg = select_first([aggregate_results.aggregate_raw_avg, scores])
+        File? aggregate_scores_sum = select_first([aggregate_results.aggregate_raw_sum, scores])
+        File? aggregate_adjusted_scores = aggregate_results.aggregate_adjusted
+        File? score_overlap = select_first([aggregate_results.aggregate_overlap, overlaps])
     }
 }
 
@@ -252,4 +272,39 @@ task compute_overlap {
         disks: "local-disk ~{disk_size} SSD"
         memory: "~{mem_gb}G"
     }
+}
+
+
+task aggregate_results {
+    input {
+        Array[File] raw_scores
+        Array[File] adjusted_scores
+        Array[File] overlap_files
+        String prefix = "all"
+        Int mem_gb = 8
+    }
+
+    Int disk_size = ceil(3*(size(raw_scores, "GB") + size(adjusted_scores, "GB") + size(overlap_files, "GB"))) + 10
+
+    command <<<
+        wget https://raw.githubusercontent.com/schaidlab/pgsc_calc_wdl/refs/heads/main/pipe/aggregate_scores.R
+        Rscript aggregate_scores.R \
+            --raw_files "~{sep=',' raw_scores}" \
+            --adjusted_files "~{sep=',' adjusted_scores}" \
+            --overlap_files "~{sep=',' overlap_files}" \
+            --out_prefix ~{prefix}
+    >>>
+
+    output {
+        File aggregate_raw_avg = "~{prefix}_raw_avg_scores.tsv"
+        File aggregate_raw_sum = "~{prefix}_raw_sum_scores.tsv"
+        File aggregate_adjusted = "~{prefix}_adjusted_scores.tsv"
+        File aggregate_overlap = "~{prefix}_overlap.tsv"
+    }
+
+    runtime {
+        docker: "rocker/tidyverse:4"
+        disks: "local-disk ~{disk_size} SSD"
+        memory: "~{mem_gb} GB"
+	}
 }
