@@ -252,10 +252,10 @@ task compute_overlap {
                 wt <- sum((vars_overlap[['weight']])^2) / sum((vars[['weight']])^2)
                 overlap[[p]] <- tibble(
                     score = p, 
-                    n_variants_score = nrow(vars), 
+                    n_variants = nrow(vars), 
                     n_variants_overlap = nrow(vars_overlap), 
                     overlap = ov,
-                    weight_ratio = wt
+                    beta_fraction = wt
                 )
             }
             overlap <- bind_rows(overlap)
