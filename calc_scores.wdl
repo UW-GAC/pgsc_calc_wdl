@@ -288,6 +288,7 @@ task aggregate_results {
 
     command <<<
         wget https://raw.githubusercontent.com/schaidlab/pgsc_calc_wdl/refs/heads/main/pipe/aggregate_scores.R
+        Rscript -e 'install.packages("optparse")'
         Rscript aggregate_scores.R \
             --raw_files "~{sep=',' raw_scores}" \
             --adjusted_files "~{sep=',' adjusted_scores}" \
