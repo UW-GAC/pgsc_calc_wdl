@@ -54,7 +54,8 @@ workflow calc_scores {
                 scorefile_ncols = n_cols.ncols,
                 pgen = pgen,
                 pvar = pvar,
-                psam = psam
+                psam = psam,
+                prefix = cohort
         }
 
         call compute_overlap {
