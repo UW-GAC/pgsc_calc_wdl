@@ -77,7 +77,7 @@ task add_scorefile_header {
                 header <- c(
                     "#pgs_name=~{pgs_name}",
                     "#pgs_id=~{pgs_id}",
-                    "#rait_reported=~{trait_reported}",
+                    "#trait_reported=~{trait_reported}",
                     "#genome_build=~{genome_build}"
                 )
                 writeLines(header, outfile)
