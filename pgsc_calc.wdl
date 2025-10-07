@@ -83,7 +83,7 @@ task add_scorefile_header {
                 writeLines(header, outfile)
             }
             dat <- readr::read_tsv("~{scorefile}", comment = "#")
-            readr::write_tsv(dat, outfile, append=TRUE)
+            readr::write_tsv(dat, outfile, append=TRUE, col_names=TRUE)
         RSCRIPT
     >>>
 
