@@ -72,7 +72,7 @@ task add_scorefile_header {
     command <<<
         R << RSCRIPT
             chk <- readLines("~{scorefile}", n=100)
-            if (any(str_detect(chk, "^#genome_build"))) {
+            if (any(stringr::str_detect(chk, "^#genome_build"))) {
                 cat("", file="header.txt", sep="")
             } else {
                 header <- c(
