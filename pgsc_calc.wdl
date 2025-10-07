@@ -26,13 +26,20 @@ workflow pgsc_calc {
         }
     }
 
+    if (defined(scorefile)) {
+        call add_scorefile_header {
+            input:
+                scorefile = select_first([scorefile, ""])
+        }
+    }
+
     call pgsc_calc_nextflow {
         input:
             pgen = select_first([prepare_genomes.pgen, pgen]),
             pvar = select_first([prepare_genomes.pvar, pvar]),
             psam = select_first([prepare_genomes.psam, psam]),
             chromosome = chromosome,
-            scorefile = scorefile,
+            scorefile = select_first([add_scorefile_header.scorefile_hdr, scorefile]),
             pgs_id = pgs_id,
             target_build = target_build,
             ancestry_ref_panel = ancestry_ref_panel,
@@ -49,6 +56,43 @@ workflow pgsc_calc {
      meta {
           author: "Stephanie Gogarten"
           email: "sdmorris@uw.edu"
+    }
+}
+
+
+task add_scorefile_header {
+    input {
+        File scorefile
+        String pgs_name = "unknown"
+        String pgs_id = "unknown"
+        String trait_reported = "unknown"
+        String genome_build = "GRCh38"
+    }
+
+    command <<<
+        R << RSCRIPT
+            chk <- readLines("~{scorefile}", n=100)
+            if (any(str_detect(chk, "^#genome_build"))) {
+                cat("", file="header.txt", sep="")
+            } else {
+                header <- c(
+                    "#pgs_name=~{pgs_name}",
+                    "#pgs_id=~{pgs_id}",
+                    "#rait_reported=~{trait_reported}",
+                    "#genome_build~{genome_build}"
+                )
+                writeLines(header, "header.txt")
+            }
+        RSCRIPT
+        cat header.txt ~{scorefile} > scorefile_with_header.txt
+    >>>
+
+    output {
+        File scorefile_hdr = "scorefile_with_header.txt"
+    }
+
+    runtime {
+        docker: "rocker/tidyverse:4"
     }
 }
 
