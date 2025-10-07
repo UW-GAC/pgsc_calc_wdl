@@ -8,7 +8,7 @@ workflow pgsc_calc {
         Array[File]? pgen
         Array[File]? pvar
         Array[File]? psam
-        Array[String] chromosome
+        Array[String] chromosome = [""]
         String target_build = "GRCh38"
         File? pgs_id
         File? scorefile
