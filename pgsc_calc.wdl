@@ -71,20 +71,20 @@ task add_scorefile_header {
 
     command <<<
         R << RSCRIPT
+            outfile <- "scorefile_with_header.txt"
             chk <- readLines("~{scorefile}", n=100)
-            if (any(stringr::str_detect(chk, "^#genome_build"))) {
-                cat("", file="header.txt", sep="")
-            } else {
+            if (!any(stringr::str_detect(chk, "^#genome_build"))) {
                 header <- c(
                     "#pgs_name=~{pgs_name}",
                     "#pgs_id=~{pgs_id}",
                     "#rait_reported=~{trait_reported}",
-                    "#genome_build~{genome_build}"
+                    "#genome_build=~{genome_build}"
                 )
-                writeLines(header, "header.txt")
+                writeLines(header, outfile)
             }
+            dat <- readr::read_tsv("~{scorefile}", comment = "#")
+            readr::write_tsv(dat, outfile, append=TRUE)
         RSCRIPT
-        cat header.txt ~{scorefile} > scorefile_with_header.txt
     >>>
 
     output {
@@ -93,6 +93,8 @@ task add_scorefile_header {
 
     runtime {
         docker: "rocker/tidyverse:4"
+        disks: "local-disk 16 SSD"
+        memory: "8G"
     }
 }
 
