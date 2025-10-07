@@ -143,6 +143,7 @@ task pgsc_calc_nextflow {
         Array[File] match_files = glob("results/~{sampleset}/match/*")
         Array[File] score_files = glob("results/~{sampleset}/score/*")
         Array[File] log_files = glob("results/pipeline_info/*")
+        File nextflow_log = ".nextflow.log"
     }
 
     runtime {
