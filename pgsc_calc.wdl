@@ -129,7 +129,7 @@ task pgsc_calc_nextflow {
         readr::write_csv(sampleset, 'samplesheet.csv'); \
         "
 
-        nextflow run pgscatalog/pgsc_calc -r v2.0.0-alpha.5 -profile conda \
+        nextflow run pgscatalog/pgsc_calc -r v2.1.0 -profile conda \
             --input samplesheet.csv \
             --target_build ~{target_build} \
             ~{"--pgs_id " + pgs_id} \
