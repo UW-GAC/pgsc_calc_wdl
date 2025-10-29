@@ -71,7 +71,7 @@ task add_scorefile_header {
 
     command <<<
         R << RSCRIPT
-            outfile <- "scorefile_with_header.txt"
+            outfile <- "~{pgs_name}.txt"
             chk <- readLines("~{scorefile}", n=100)
             if (!any(stringr::str_detect(chk, "^#genome_build"))) {
                 header <- c(
@@ -88,7 +88,7 @@ task add_scorefile_header {
     >>>
 
     output {
-        File scorefile_hdr = "scorefile_with_header.txt"
+        File scorefile_hdr = "~{pgs_name}.txt"
     }
 
     runtime {
@@ -141,7 +141,8 @@ task pgsc_calc_nextflow {
     output {
         File samplesheet = "samplesheet.csv"
         Array[File] match_files = glob("results/~{sampleset}/match/*")
-        Array[File] score_files = glob("results/~{sampleset}/score/*")
+        File score_file = "results/~{sampleset}/score/aggregated_scores.txt.gz"
+        File report_file = "results/~{sampleset}/score/report.html"
         Array[File] log_files = glob("results/pipeline_info/*")
         File nextflow_log = ".nextflow.log"
     }
