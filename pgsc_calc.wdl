@@ -49,7 +49,8 @@ workflow pgsc_calc {
 
     output {
         Array[File] match_files = pgsc_calc_nextflow.match_files
-        Array[File] score_files = pgsc_calc_nextflow.score_files
+        File score_file = pgsc_calc_nextflow.score_file
+        File report_file = pgsc_calc_nextflow.report_file
         Array[File] log_files = pgsc_calc_nextflow.log_files
     }
 
