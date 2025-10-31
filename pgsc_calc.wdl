@@ -8,7 +8,7 @@ workflow pgsc_calc {
         Array[File]? pgen
         Array[File]? pvar
         Array[File]? psam
-        Array[String] chromosome
+        Array[String] chromosome = [""]
         String target_build = "GRCh38"
         File? pgs_id
         File? scorefile
@@ -26,13 +26,20 @@ workflow pgsc_calc {
         }
     }
 
+    if (defined(scorefile)) {
+        call add_scorefile_header {
+            input:
+                scorefile = select_first([scorefile, ""])
+        }
+    }
+
     call pgsc_calc_nextflow {
         input:
             pgen = select_first([prepare_genomes.pgen, pgen]),
             pvar = select_first([prepare_genomes.pvar, pvar]),
             psam = select_first([prepare_genomes.psam, psam]),
             chromosome = chromosome,
-            scorefile = scorefile,
+            scorefile = select_first([add_scorefile_header.scorefile_hdr, scorefile]),
             pgs_id = pgs_id,
             target_build = target_build,
             ancestry_ref_panel = ancestry_ref_panel,
@@ -42,13 +49,53 @@ workflow pgsc_calc {
 
     output {
         Array[File] match_files = pgsc_calc_nextflow.match_files
-        Array[File] score_files = pgsc_calc_nextflow.score_files
+        File score_file = pgsc_calc_nextflow.score_file
+        File report_file = pgsc_calc_nextflow.report_file
         Array[File] log_files = pgsc_calc_nextflow.log_files
     }
 
      meta {
           author: "Stephanie Gogarten"
           email: "sdmorris@uw.edu"
+    }
+}
+
+
+task add_scorefile_header {
+    input {
+        File scorefile
+        String pgs_name = "unknown"
+        String pgs_id = "unknown"
+        String trait_reported = "unknown"
+        String genome_build = "GRCh38"
+    }
+
+    command <<<
+        R << RSCRIPT
+            outfile <- "~{pgs_name}.txt"
+            chk <- readLines("~{scorefile}", n=100)
+            if (!any(stringr::str_detect(chk, "^#genome_build"))) {
+                header <- c(
+                    "#pgs_name=~{pgs_name}",
+                    "#pgs_id=~{pgs_id}",
+                    "#trait_reported=~{trait_reported}",
+                    "#genome_build=~{genome_build}"
+                )
+                writeLines(header, outfile)
+            }
+            dat <- readr::read_tsv("~{scorefile}", comment = "#")
+            readr::write_tsv(dat, outfile, append=TRUE, col_names=TRUE)
+        RSCRIPT
+    >>>
+
+    output {
+        File scorefile_hdr = "~{pgs_name}.txt"
+    }
+
+    runtime {
+        docker: "rocker/tidyverse:4"
+        disks: "local-disk 16 SSD"
+        memory: "8G"
     }
 }
 
@@ -95,8 +142,10 @@ task pgsc_calc_nextflow {
     output {
         File samplesheet = "samplesheet.csv"
         Array[File] match_files = glob("results/~{sampleset}/match/*")
-        Array[File] score_files = glob("results/~{sampleset}/score/*")
+        File score_file = "results/~{sampleset}/score/aggregated_scores.txt.gz"
+        File report_file = "results/~{sampleset}/score/report.html"
         Array[File] log_files = glob("results/pipeline_info/*")
+        File nextflow_log = ".nextflow.log"
     }
 
     runtime {
