@@ -8,6 +8,8 @@ The first step of the workflow [formats the input genomes](https://pgsc-calc.rea
 
 The next step [runs the pgsc_calc nextflow workflow](https://pgsc-calc.readthedocs.io/en/latest/getting-started.html) inside a docker container. 
 
+Either pgs_id or scorefile should be specified, not both. If a scorefile is provided, its genome build should match the genotypes and be specified in `target_build`.
+
 input | description
 --- | ---
 vcf | Array of VCF files. If provided, will be converted to pgen/pvar/psam. If not provided, use pgen/pvar/psam inputs instead.

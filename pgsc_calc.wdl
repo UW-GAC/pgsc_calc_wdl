@@ -29,7 +29,8 @@ workflow pgsc_calc {
     if (defined(scorefile)) {
         call add_scorefile_header {
             input:
-                scorefile = select_first([scorefile, ""])
+                scorefile = select_first([scorefile, ""]),
+                genome_build = target_build
         }
     }
 
