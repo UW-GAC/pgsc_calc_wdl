@@ -55,8 +55,8 @@ task prepare_genomes {
             --allow-extra-chr \
             --chr 1-22, X, Y, XY \
             --set-all-var-ids @:#:\$r:\$a \
-            ~{true="--snps-only 'just-acgt' --max-alleles 2" false="" snps_only} \
-            --make-pgen --out ~{basename}
+            ~{true="--snps-only 'just-acgt' " false="" snps_only} \
+            --make-pgen multiallelics=- --out ~{basename}
     >>>
 
     output {
