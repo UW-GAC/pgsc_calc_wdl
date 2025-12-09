@@ -39,7 +39,7 @@ task weight_scores {
             filter(!if_all(any_of(weights[["score"]]), ~ . == 0))
         for (i in 1:nrow(weights)) {
             if (weights[["score"]][i] %in% names(selected_scores)) {
-                selected_scores[[weights[["score"]][i]]] <- selected_scores[[weights[["score"]][i]]] * weights$weight[i]
+                selected_scores[[weights[["score"]][i]]] <- selected_scores[[weights[["score"]][i]]] * weights[["weight"]][i]
             }
         }
         write_tsv(selected_scores, "weighted_scores.txt")
