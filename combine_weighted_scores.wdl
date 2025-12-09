@@ -27,6 +27,7 @@ task weight_scores {
 
     command <<<
         R << RSCRIPT
+        library(tidyverse)
         scores <- read_tsv("~{scorefile}")
         weights <- read_tsv("~{weights}")
         selected_scores <- scores %>%
