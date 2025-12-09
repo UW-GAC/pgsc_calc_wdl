@@ -13,6 +13,10 @@ workflow combine_weighted_scores {
                 weights = weights
         }
     }
+
+    output {
+        Array[File] weighted_scores = weight_scores.weighted_scores
+    }
 }
 
 
