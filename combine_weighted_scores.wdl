@@ -35,11 +35,11 @@ task weight_scores {
         scores <- read_tsv("~{scorefile}")
         weights <- read_tsv("~{weights}")
         selected_scores <- scores %>%
-            select(ID, effect_allele, any_of(weights$score)) %>%
-            filter(!if_all(any_of(weights$score), ~ . == 0))
+            select(ID, effect_allele, any_of(weights[["score"]])) %>%
+            filter(!if_all(any_of(weights[["score"]]), ~ . == 0))
         for (i in 1:nrow(weights)) {
-            if (weights$score[i] %in% names(selected_scores)) {
-                selected_scores[[weights$score[i]]] <- selected_scores[[weights$score[i]]] * weights$weight[i]
+            if (weights[["score"]][i] %in% names(selected_scores)) {
+                selected_scores[[weights[["score"]][i]]] <- selected_scores[[weights[["score"]][i]]] * weights$weight[i]
             }
         }
         write_tsv(selected_scores, "weighted_scores.txt")
