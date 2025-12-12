@@ -72,3 +72,17 @@ scores | sscore file output by plink
 adjusted_scores | if ancestry_adjust is true, a file with adjusted scores is returned
 variants | variants included in sscore
 overlap | TSV file with fraction of overlapping variants and ratio of squared weights for each score
+
+
+## combine_weighted_scores
+
+Using harmonized scoring files (same effect allele for each variant) and a file of weights for a set of scores, weight each score and sum over the weighted scores.
+
+input | description
+--- | ---
+score_files | Array of score files 
+weights | File with columns "score" and "weight" specifying the weight for each score. The scores should be a subset of those in score_files.
+
+output | description
+--- | ---
+combined_scores | File with combined weighted scores for each variant. Will have three columns: "ID" (variant id), "effect_allele", and "score".
