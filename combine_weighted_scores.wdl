@@ -1,0 +1,102 @@
+version 1.0
+
+workflow combine_weighted_scores {
+    input {
+        Array[File] scorefiles
+        File weights
+    }
+
+    scatter (scorefile in scorefiles) {
+        call weight_scores {
+            input:
+                scorefile = scorefile,
+                weights = weights
+        }
+    }
+
+    call combine_scores {
+        input:
+            scorefiles = weight_scores.weighted_scores
+    }
+
+    output {
+        File combined_scores = combine_scores.combined_scores
+    }
+}
+
+
+task weight_scores {
+    input {
+        File scorefile
+        File weights
+        Int mem_gb = 64
+    }
+
+    Int disk_size = ceil(3*(size(scorefile, "GB") + size(weights, "GB"))) + 10
+
+    command <<<
+        R << RSCRIPT
+        library(tidyverse)
+        scores <- read_tsv("~{scorefile}")
+        weights <- read_tsv("~{weights}")
+        selected_scores <- scores %>%
+            select(ID, effect_allele, any_of(weights[["score"]])) %>%
+            filter(!if_all(any_of(weights[["score"]]), ~ . == 0))
+        for (i in 1:nrow(weights)) {
+            if (weights[["score"]][i] %in% names(selected_scores)) {
+                selected_scores[[weights[["score"]][i]]] <- selected_scores[[weights[["score"]][i]]] * weights[["weight"]][i]
+            }
+        }
+        write_tsv(selected_scores, "weighted_scores.txt")
+        RSCRIPT
+    >>>
+
+    output {
+        File weighted_scores = "weighted_scores.txt"
+    }
+
+    runtime {
+        docker: "rocker/tidyverse:4"
+        disks: "local-disk ~{disk_size} SSD"
+        memory: "~{mem_gb}G"
+    }
+}
+
+
+task combine_scores {
+    input {
+        Array[File] scorefiles
+        Int mem_gb = 64
+    }
+
+    Int disk_size = ceil(3*(size(scorefiles, "GB"))) + 10
+
+    command <<<
+        R << RSCRIPT
+        library(tidyverse)
+        weighted_scorefiles <- readLines("~{write_lines(scorefiles)}")
+        all_scores <- read_tsv(weighted_scorefiles[1])
+        for (i in 2:length(weighted_scorefiles)) {
+            weighted_scores <- read_tsv(weighted_scorefiles[i])
+            chk_alleles <- inner_join(all_scores[,1:2], weighted_scores[,1:2], by=c("ID"))
+            stopifnot(all(chk_alleles[["effect_allele.x"]] == chk_alleles[["effect_allele.x"]]))
+            all_scores <- full_join(all_scores, weighted_scores, by=c("ID", "effect_allele"))
+        }
+        all_scores[is.na(all_scores)] <- 0
+        snps <- all_scores[,1:2]
+        scores <- rowSums(all_scores[,3:ncol(all_scores)])
+        new_scores <- bind_cols(snps, score=scores)
+        write_tsv(new_scores, "combined_scores.txt")
+        RSCRIPT
+    >>>
+
+    output {
+        File combined_scores = "combined_scores.txt"
+    }
+
+    runtime {
+        docker: "rocker/tidyverse:4"
+        disks: "local-disk ~{disk_size} SSD"
+        memory: "~{mem_gb}G"
+    }
+}

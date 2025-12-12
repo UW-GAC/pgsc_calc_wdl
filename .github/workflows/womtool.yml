@@ -32,6 +32,7 @@ jobs:
             ./fit_ancestry_model.wdl,
             ./adjust_scores.wdl,
             ./subset_score_file.wdl,
+            ./combine_weighted_scores.wdl,
         ]
 
     name: "Run womtool: ${{ matrix.wdl-file }}"
