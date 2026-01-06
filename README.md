@@ -60,7 +60,7 @@ scorefile | score file
 pgen | pgen file
 pvar | pvar file
 psam | psam file
-harmonize_scorefile | Boolean for whether to harmonize scorefile to consistent effect allele (default true)
+harmonize_scorefile | Boolean for whether to harmonize scorefile to consistent effect allele (default false)
 add_chr_prefix | Boolean for whether to add "chr" prefix to scorefile variant ids to match pvar (default false)
 ancestry_adjust | Boolean for whether to adjust scores for ancestry using PCs
 pcs | optional file with PCs to adjust for ancestry
