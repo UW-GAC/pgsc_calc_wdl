@@ -13,13 +13,25 @@ workflow pgsc_calc_prepare_genomes {
                 vcf = file,
                 snps_only = snps_only
         }
+        # Normalize alleles in the single-sample bcf
+        # This changes an allele like CA/TA to C/T.
+        call bcftools_norm {
+            input:
+                bcf = prepare_genomes.single_sample_bcf
+        }
+        # Convert the normalized bcf back to plink format and get the pvar file.
+        call normed_pvar {
+            input:
+                normed_bcf = bcftools_norm.normed_bcf
+        }
     }
 
     if (merge_chroms) {
         call merge_files {
             input:
                 pgen = prepare_genomes.pgen,
-                pvar = prepare_genomes.pvar,
+                # Use the pvar file with normalized alleles.
+                pvar = normed_pvar.pvar,
                 psam = prepare_genomes.psam
         }
     }
@@ -51,18 +63,30 @@ task prepare_genomes {
     String prefix = if (sub(filename, ".bcf", "") != filename) then "--bcf" else "--vcf"
 
     command <<<
+        set -e
         plink2 ~{prefix} ~{vcf}  \
             --allow-extra-chr \
             --chr 1-22, X, Y, XY \
             --set-all-var-ids @:#:\$r:\$a \
             ~{true="--snps-only 'just-acgt' " false="" snps_only} \
             --make-pgen multiallelics=- --out ~{basename}
+
+        # Make a single sample plink for normalizing alleles in bcftools
+        head -n 2 ~{basename}.psam > keep.txt
+        plink2 \
+            --pfile multiallelic \
+            --keep keep.txt \
+            --export bcf \
+            --out single_sample
+
+        plink2
     >>>
 
     output {
         File pgen = "~{basename}.pgen"
         File pvar = "~{basename}.pvar"
         File psam = "~{basename}.psam"
+        File single_sample_bcf = "single_sample.bcf"
     }
 
     runtime {
@@ -74,6 +98,53 @@ task prepare_genomes {
     }
 }
 
+task bcftools_norm {
+    input {
+        File bcf
+    }
+
+    String filename = basename(bcf)
+    String basename = sub(filename, "[[:punct:]][bv]cf.*z?$", "")
+
+    command <<<
+        set -e
+        bcftools \
+            norm -a \
+            ~{bcf} \
+            -o ~{basename}_normed.bcf
+    >>>
+
+    output {
+        File normed_bcf = "{basename}_normed.bcf"
+    }
+
+    runtime {
+        docker: "SOME_DOCKER_WITH_BCFTOOLS"
+    }
+
+}
+
+task normed_pvar {
+    input {
+        File normed_bcf
+    }
+
+    command <<<
+        set -e
+        plink2 \
+            --bcf ~{normed_bcf} \
+            --make-pgen \
+            --out tmp
+    >>>
+
+    output {
+        File new_pvar = "tmp.pvar"
+    }
+
+    runtime {
+        docker: "SOME_DOCKER_WITH_BCFTOOLS_AND_PGTOOLS"
+    }
+}
 
 task merge_files {
     input {
