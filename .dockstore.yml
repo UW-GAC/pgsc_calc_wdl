@@ -31,4 +31,7 @@ workflows:
    - name: combine_weighted_scores
      subclass: WDL
      primaryDescriptorPath: /combine_weighted_scores.wdl
+   - name: overlap
+     subclass: WDL
+     primaryDescriptorPath: /overlap.wdl
      
