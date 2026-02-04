@@ -277,7 +277,7 @@ task compute_overlap {
     }
 
     runtime {
-        docker: "us.gcr.io/broad-dsp-gcr-public/anvil-rstudio-bioconductor:3.17.0"
+        docker: "rocker/tidyverse:4"
         disks: "local-disk ~{disk_size} SSD"
         memory: "~{mem_gb}G"
     }
