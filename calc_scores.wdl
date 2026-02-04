@@ -240,24 +240,32 @@ task compute_overlap {
     command <<<
         R << RSCRIPT
             library(tidyverse)
-            score_vars <- read_tsv('~{scorefile}')
+            install.packages("R.utils", repos="https://cloud.r-project.org")
+            score_file <- '~{scorefile}'
             overlap_vars <- readLines('~{variants}')
-            names(score_vars)[1] <- 'ID'
-            pgs <- names(score_vars)[str_detect(names(score_vars), '^PGS')]
+            score_vars_head <- read_tsv(score_file, n_max=10)
+            id <- names(score_vars_head)[1]
+            pgs <- names(score_vars_head)[str_detect(names(score_vars_head), '^PGS')]
+            batches <- split(pgs, ceiling(seq_along(pgs) / 100))
             overlap <- list()
-            for (p in pgs) {
-                vars <- select(score_vars, ID, weight=!!p)
-                vars <- filter(vars, weight != 0)
-                vars_overlap <- filter(vars, ID %in% overlap_vars)
-                ov <- nrow(vars_overlap) / nrow(vars)
-                wt <- sum((vars_overlap[['weight']])^2) / sum((vars[['weight']])^2)
-                overlap[[p]] <- tibble(
+            for (b in batches) {
+                cols <- c(setNames("character", id), setNames(rep("numeric", length(b)), b))
+                score_vars <- data.table::fread(score_file, select=cols)
+                names(score_vars)[1] <- "ID"
+                for (p in b) {
+                    vars <- select(score_vars, ID, weight=!!p)
+                    vars <- filter(vars, weight != 0)
+                    vars_overlap <- filter(vars, ID %in% overlap_vars)
+                    ov <- nrow(vars_overlap) / nrow(vars)
+                    wt <- sum((vars_overlap[['weight']])^2) / sum((vars[['weight']])^2)
+                    overlap[[p]] <- tibble(
                     score = p, 
                     n_variants = nrow(vars), 
                     n_variants_overlap = nrow(vars_overlap), 
                     overlap = ov,
                     beta_fraction = wt
-                )
+                    )
+                }
             }
             overlap <- bind_rows(overlap)
             write_tsv(overlap, 'score_overlap.tsv')
@@ -269,7 +277,7 @@ task compute_overlap {
     }
 
     runtime {
-        docker: "rocker/tidyverse:4"
+        docker: "us.gcr.io/broad-dsp-gcr-public/anvil-rstudio-bioconductor:3.17.0"
         disks: "local-disk ~{disk_size} SSD"
         memory: "~{mem_gb}G"
     }
