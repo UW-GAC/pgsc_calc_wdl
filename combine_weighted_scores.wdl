@@ -19,8 +19,13 @@ workflow combine_weighted_scores {
             scorefiles = weight_scores.weighted_scores
     }
 
+    call format_scores {
+        input:
+            scorefile = combine_scores.combined_scores
+    }
+
     output {
-        File combined_scores = combine_scores.combined_scores
+        File combined_scores = format_scores.formatted_scores
     }
 }
 
@@ -98,6 +103,39 @@ task combine_scores {
 
     output {
         File combined_scores = "combined_scores.txt"
+    }
+
+    runtime {
+        docker: "rocker/tidyverse:4"
+        disks: "local-disk ~{disk_size} SSD"
+        memory: "~{mem_gb}G"
+    }
+}
+
+
+task format_scores {
+    input {
+        File scorefile
+        Int mem_gb = 64
+    }
+
+    Int disk_size = ceil(3*(size(scorefile, "GB"))) + 10
+
+    command <<<
+        R << RSCRIPT
+        library(tidyverse)
+        scores <- read_tsv("~{scorefile}")
+        scores <- scores %>%
+            separate_wider_delim(ID, delim=":", names=c("chr_name", "chr_position", "ref", "alt"), cols_remove=FALSE) %>%
+            mutate(other_allele = ifelse(effect_allele == alt, ref, alt)) %>%
+            rename(effect_weight = score) %>%
+        select(ID, chr_name, chr_position, effect_allele, other_allele, effect_weight)
+        write_tsv(scores, "formatted_scores.txt")
+        RSCRIPT
+    >>>
+
+    output {
+        File formatted_scores = "formatted_scores.txt"
     }
 
     runtime {
