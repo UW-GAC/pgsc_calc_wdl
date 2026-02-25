@@ -37,11 +37,17 @@ task weight_scores {
     command <<<
         R << RSCRIPT
         library(tidyverse)
-        scores <- read_tsv("~{scorefile}")
-        weights <- read_tsv("~{weights}")
+        install.packages("R.utils", repos="https://cloud.r-project.org")
+        weight_file <- "~{weights}"
+        score_file <- "~{scorefile}"
+        weights <- read_tsv(weight_file)
+        score_vars_head <- read_tsv(score_file, n_max=10)
+        pgs <- intersect(names(score_vars_head), weights[["score"]])
+        cols <- c("ID", "effect_allele", pgs)
+        scores <- data.table::fread(score_file, select=cols)
         selected_scores <- scores %>%
-            select(ID, effect_allele, any_of(weights[["score"]])) %>%
-            filter(!if_all(any_of(weights[["score"]]), ~ . == 0))
+            filter(!if_all(any_of(pgs), ~ . == 0))
+        rm(scores)
         for (i in 1:nrow(weights)) {
             if (weights[["score"]][i] %in% names(selected_scores)) {
                 selected_scores[[weights[["score"]][i]]] <- selected_scores[[weights[["score"]][i]]] * weights[["weight"]][i]
