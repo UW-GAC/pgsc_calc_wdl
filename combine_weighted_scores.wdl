@@ -90,7 +90,7 @@ task combine_scores {
         for (i in 2:length(weighted_scorefiles)) {
             weighted_scores <- read_tsv(weighted_scorefiles[i])
             chk_alleles <- inner_join(all_scores[,1:2], weighted_scores[,1:2], by=c("ID"))
-            stopifnot(all(chk_alleles[["effect_allele.x"]] == chk_alleles[["effect_allele.x"]]))
+            stopifnot(all(chk_alleles[["effect_allele.x"]] == chk_alleles[["effect_allele.y"]]))
             all_scores <- full_join(all_scores, weighted_scores, by=c("ID", "effect_allele"))
         }
         all_scores[is.na(all_scores)] <- 0
