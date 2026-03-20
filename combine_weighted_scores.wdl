@@ -25,7 +25,8 @@ workflow combine_weighted_scores {
     }
 
     output {
-        File combined_scores = format_scores.formatted_scores
+        File combined_scores = combine_scores.combined_scores
+        File formatted_scores = format_scores.formatted_scores
     }
 }
 
