@@ -46,7 +46,7 @@ task export_dosage {
     Int disk_size = ceil(2*(size(pgen, "GB") + size(pvar, "GB") + size(psam, "GB"))) + 10
 
     output {
-        File dosage = "out.traw"
+        File dosage = "~{prefix}.traw"
     }
 
     runtime {
