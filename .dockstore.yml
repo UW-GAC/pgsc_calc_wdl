@@ -34,4 +34,7 @@ workflows:
    - name: overlap
      subclass: WDL
      primaryDescriptorPath: /overlap.wdl
+   - name: plink_export_dosage
+     subclass: WDL
+     primaryDescriptorPath: /plink_export_dosage.wdl
      
