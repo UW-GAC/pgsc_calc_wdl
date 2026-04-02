@@ -38,7 +38,7 @@ task export_dosage {
 
     command <<<
         plink2 --pgen ~{pgen} --pvar ~{pvar} --psam ~{psam} \
-            --keep samples --extract variants \
+            --keep ~{samples} --extract ~{variants} \
             --export Av \
             --out ~{prefix}
     >>>
