@@ -205,12 +205,13 @@ task plink_score {
         Int mem_gb = 16
         Int cpu = 2
     }
-    
+
     Int disk_size = ceil(1.5*(size(pgen, "GB") + size(pvar, "GB") + size(psam, "GB") + size(scorefile, "GB"))) + 10
+    String score_cols = if (scorefile_ncols > 3) then "3-~{scorefile_ncols}" else "3"
 
     command <<<
         plink2 --pgen ~{pgen} --pvar ~{pvar} --psam ~{psam} --score ~{scorefile} \
-            no-mean-imputation header-read list-variants cols=+scoresums --score-col-nums 3-~{scorefile_ncols} \
+            no-mean-imputation header-read list-variants cols=+scoresums --score-col-nums ~{score_cols} \
             --out ~{prefix}
     >>>
 
@@ -259,9 +260,9 @@ task compute_overlap {
                     ov <- nrow(vars_overlap) / nrow(vars)
                     wt <- sum((vars_overlap[['weight']])^2) / sum((vars[['weight']])^2)
                     overlap[[p]] <- tibble(
-                    score = p, 
-                    n_variants = nrow(vars), 
-                    n_variants_overlap = nrow(vars_overlap), 
+                    score = p,
+                    n_variants = nrow(vars),
+                    n_variants_overlap = nrow(vars_overlap),
                     overlap = ov,
                     beta_fraction = wt
                     )
