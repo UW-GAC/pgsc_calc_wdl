@@ -68,7 +68,7 @@ task weight_scores {
     }
 
     runtime {
-        docker: "rocker/tidyverse:4"
+        docker: "rocker/tidyverse:4.5.1"
         disks: "local-disk ~{disk_size} SSD"
         memory: "~{mem_gb}G"
     }
@@ -107,7 +107,7 @@ task combine_scores {
     }
 
     runtime {
-        docker: "rocker/tidyverse:4"
+        docker: "rocker/tidyverse:4.5.1"
         disks: "local-disk ~{disk_size} SSD"
         memory: "~{mem_gb}G"
     }
