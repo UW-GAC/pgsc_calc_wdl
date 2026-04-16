@@ -41,14 +41,18 @@ task weight_scores {
     Int disk_size = ceil(3*(size(scorefile, "GB") + size(weights, "GB"))) + 10
 
     command <<<
-        zcat ~{scorefile} | wc -l
+        set -e
+        mv ~{scorefile} scorefile.txt.gz
+        gunzip scorefile.txt.gz
+        wc -l scorefile.txt
+
         R --vanilla << RSCRIPT
         # More debugging
         options(datatable.verbose=TRUE)
         library(tidyverse)
         install.packages("R.utils", repos="https://cloud.r-project.org")
         weight_file <- "~{weights}"
-        score_file <- "~{scorefile}"
+        score_file <- "scorefile.txt"
         weights <- read_tsv(weight_file)
         score_vars_head <- read_tsv(score_file, n_max=10)
         pgs <- intersect(names(score_vars_head), weights[["score"]])
