@@ -73,7 +73,7 @@ task weight_scores {
     }
 
     runtime {
-        docker: "us.gcr.io/broad-dsp-gcr-public/anvil-rstudio-bioconductor:3.21.0"
+        docker: "rocker/tidyverse:4.5.1"
         disks: "local-disk ~{disk_size} SSD"
         memory: "~{mem_gb}G"
     }
