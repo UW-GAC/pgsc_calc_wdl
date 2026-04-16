@@ -41,7 +41,7 @@ task weight_scores {
     Int disk_size = ceil(3*(size(scorefile, "GB") + size(weights, "GB"))) + 10
 
     command <<<
-        R << RSCRIPT
+        R --vanilla << RSCRIPT
         library(tidyverse)
         install.packages("R.utils", repos="https://cloud.r-project.org")
         weight_file <- "~{weights}"
