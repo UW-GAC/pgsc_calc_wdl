@@ -41,7 +41,10 @@ task weight_scores {
     Int disk_size = ceil(3*(size(scorefile, "GB") + size(weights, "GB"))) + 10
 
     command <<<
+        zcat ~{scorefile} | wc -l
         R --vanilla << RSCRIPT
+        # More debugging
+        options(datatable.verbose=TRUE)
         library(tidyverse)
         install.packages("R.utils", repos="https://cloud.r-project.org")
         weight_file <- "~{weights}"
@@ -90,8 +93,6 @@ task combine_scores {
 
     command <<<
         R << RSCRIPT
-        # More debugging
-        options(datatable.verbose=TRUE)
         library(tidyverse)
         weighted_scorefiles <- readLines("~{write_lines(scorefiles)}")
         all_scores <- read_tsv(weighted_scorefiles[1])
