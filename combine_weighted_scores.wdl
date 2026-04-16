@@ -51,14 +51,19 @@ task weight_scores {
         pgs <- intersect(names(score_vars_head), weights[["score"]])
         cols <- c("ID", "effect_allele", pgs)
         scores <- data.table::fread(score_file, select=cols)
+        print(dim(scores))
+        # Debugging
+        print(sapply(scores, function(x) sum(x != 0)))
         selected_scores <- scores %>%
             filter(!if_all(any_of(pgs), ~ . == 0))
+        print(sapply(selected_scores, function(x) sum(x != 0)))
         rm(scores)
         for (i in 1:nrow(weights)) {
             if (weights[["score"]][i] %in% names(selected_scores)) {
                 selected_scores[[weights[["score"]][i]]] <- selected_scores[[weights[["score"]][i]]] * weights[["weight"]][i]
             }
         }
+        print(sapply(selected_scores, function(x) sum(x != 0)))
         write_tsv(selected_scores, "weighted_scores.txt")
         RSCRIPT
     >>>
