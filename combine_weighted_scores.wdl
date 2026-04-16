@@ -38,7 +38,7 @@ task weight_scores {
         Int mem_gb = 64
     }
 
-    Int disk_size = ceil(3*(size(scorefile, "GB") + size(weights, "GB"))) + 10
+    Int disk_size = ceil(10*(size(scorefile, "GB") + size(weights, "GB"))) + 10
 
     command <<<
         set -e
