@@ -38,19 +38,24 @@ task weight_scores {
         Int mem_gb = 64
     }
 
-    Int disk_size = ceil(3*(size(scorefile, "GB") + size(weights, "GB"))) + 10
+    Int disk_size = ceil(10*(size(scorefile, "GB") + size(weights, "GB"))) + 10
 
     command <<<
-        R << RSCRIPT
+        set -e
+        mv ~{scorefile} scorefile.txt.gz
+        gunzip scorefile.txt.gz
+
+        R --vanilla << RSCRIPT
         library(tidyverse)
-        install.packages("R.utils", repos="https://cloud.r-project.org")
         weight_file <- "~{weights}"
-        score_file <- "~{scorefile}"
+        score_file <- "scorefile.txt"
         weights <- read_tsv(weight_file)
         score_vars_head <- read_tsv(score_file, n_max=10)
         pgs <- intersect(names(score_vars_head), weights[["score"]])
         cols <- c("ID", "effect_allele", pgs)
         scores <- data.table::fread(score_file, select=cols)
+        print("Initial variant counts:")
+        print(sapply(scores, function(x) sum(x != 0)))
         selected_scores <- scores %>%
             filter(!if_all(any_of(pgs), ~ . == 0))
         rm(scores)
@@ -59,6 +64,8 @@ task weight_scores {
                 selected_scores[[weights[["score"]][i]]] <- selected_scores[[weights[["score"]][i]]] * weights[["weight"]][i]
             }
         }
+        print("Final variant counts:")
+        print(sapply(selected_scores, function(x) sum(x != 0)))
         write_tsv(selected_scores, "weighted_scores.txt")
         RSCRIPT
     >>>
