@@ -47,7 +47,6 @@ task weight_scores {
 
         R --vanilla << RSCRIPT
         library(tidyverse)
-        install.packages("R.utils", repos="https://cloud.r-project.org")
         weight_file <- "~{weights}"
         score_file <- "scorefile.txt"
         weights <- read_tsv(weight_file)
