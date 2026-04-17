@@ -236,13 +236,16 @@ task compute_overlap {
         Int mem_gb = 64
     }
 
-    Int disk_size = ceil(3*(size(scorefile, "GB") + size(variants, "GB"))) + 10
+    Int disk_size = ceil(10*(size(scorefile, "GB") + size(variants, "GB"))) + 10
 
     command <<<
+        set -e
+        mv ~{scorefile} scorefile.txt.gz
+        gunzip scorefile.txt.gz
+
         R << RSCRIPT
             library(tidyverse)
-            install.packages("R.utils", repos="https://cloud.r-project.org")
-            score_file <- '~{scorefile}'
+            score_file <- 'scorefile.txt'
             overlap_vars <- readLines('~{variants}')
             score_vars_head <- read_tsv(score_file, n_max=10)
             id <- names(score_vars_head)[1]
