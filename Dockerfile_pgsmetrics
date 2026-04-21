@@ -1,0 +1,6 @@
+# Dockerfile to build the uwgac/pgsmetrics image.
+FROM rocker/tidyverse:4.5.1
+
+RUN Rscript -e "devtools::install_github('krillinor/pgsmetrics')"
+
+CMD ["/bin/sh"]
